@@ -1,5 +1,5 @@
 export function expose (object: Object) {
-  onmessage = ({ data }) => {
+  onmessage = async ({ data }) => {
     const [id, [method, ...args], observe] = data
     if (typeof object[method] !== 'function') {
       console.warn(`${object.constructor?.name}: Tried to call ${method} which is not a method`, data)
@@ -11,11 +11,12 @@ export function expose (object: Object) {
           complete ()    { postMessage([id, null, undefined, true]) }
         }))
       } else {
-        Promise.resolve(object[method](...args)).then(returned=>{
+        try {
+          const returned = await Promise.resolve(object[method](...args))
           postMessage([id, null, returned, true])
-        }).catch(error=>{
+        } catch (error) {
           postMessage([id, error, undefined, true])
-        })
+        }
       }
     }
   }

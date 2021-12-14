@@ -1,5 +1,9 @@
 import Observable from 'zen-observable'
 
+type Callback = Function
+type Timeout  = number
+type Request  = [Callback, Timeout|null]
+
 export default class WorkerClient {
 
   /** Allows a different Promise implementation to be used */
@@ -19,8 +23,8 @@ export default class WorkerClient {
   /** Incremented on every RPC */
   private id      = 0n
 
-  /** Map of request id to response callback */
-  private requests: Map<BigInt, Function> = new Map()
+  /** Map of request id to response callback and timeout timer */
+  private requests: Map<BigInt, Request> = new Map()
 
   /** Default timeout, can be overridden via request options. */
   private timeout = 1000
@@ -43,20 +47,29 @@ export default class WorkerClient {
     const primitive = (options?.observe)
 
       ? new Observable((observer: any)=>{
-          this.requests.set(id, (response: any) => {
-            observer.next(response)
-          })
+          this.requests.set(id, [
+            (response: any) => observer.next(response),
+            null
+          ])
         })
 
       : new Promise((resolve, reject)=>{
-          this.requests.set(id, (response: any) => {
-            clearTimeout(timeout)
-            resolve(response)
-          })
+
           const t = options?.timeout || this.timeout
-          const timeout = setTimeout(()=>{
-            reject(new Error(`${this.name}: RPC#${id} timed out after ${t}ms.`))
-          }, t)
+
+          const timeout = setTimeout(
+            ()=>reject(new Error(`${this.name}: RPC#${id} timed out after ${t}ms.`)),
+            t
+          )
+
+          this.requests.set(id, [
+            (response: any) => {
+              clearTimeout(timeout)
+              resolve(response)
+            },
+            timeout
+          ])
+
         })
 
     this.worker.postMessage(
@@ -82,15 +95,20 @@ export default class WorkerClient {
       throw new Error(`${this.name}: got malformed RPC response`)
     }
 
-    if (error) {
-      throw error
-    }
+    const [callback, timeout] = this.requests.get(id)
+    clearTimeout(timeout)
 
-    const callback = this.requests.get(id)
+    if (error) {
+      const rethrown = new Error(`${this.name}: ${error.message}`)
+      rethrown.stack = error.stack
+      throw rethrown
+    }
 
     if (callback) {
       callback(response)
-      if (done) this.requests.delete(id)
+      if (done) {
+        this.requests.delete(id)
+      }
     } else {
       throw new Error(`${this.name}: got RPC response for uncalled RPC#${id}`)
     }

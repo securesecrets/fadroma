@@ -28,13 +28,17 @@ fadroma-snip20-impl      = { path = "../fadroma-snip20-impl" }
 fadroma-storage          = { path = "../fadroma-storage" }
 
 [features]
-default = [ "fadroma-platform-scrt" ]
+default = [ "scrt" ]
 
 backtraces = [] # TODO set backtraces on components
 browser    = [ "backtraces" ]
 declare    = []
 derive     = []
+ensemble   = []
+compose    = []
+storage    = []
 harness    = []
+snip20     = []
 
 scrt  = [ "fadroma-platform-scrt" ]
 terra = [ "fadroma-platform-terra" ]

@@ -19,7 +19,7 @@ import { PatchedSigningCosmWasmClient_1_2 } from './Scrt_1_2_Patch'
 
 export type APIConstructor = new(...args:any) => SigningCosmWasmClient
 
-const console = Console('@fadroma/scrt/Agent')
+const console = Console('Fadroma Agent SN1.2')
 
 export async function getScrtAgent (identity: Identity, AgentClass) {
   const { name = 'Anonymous', ...args } = identity
@@ -65,7 +65,7 @@ export class ScrtAgent extends Agent {
   fees = ScrtGas.defaultFees
   defaultDenomination = 'uscrt'
   constructor (options: ScrtAgentOptions = {}) {
-    super(options)
+    super(options.chain)
     this.name     = this.trace.name = options?.name || ''
     this.chain    = options?.chain as Scrt // TODO chain id to chain
     this.fees     = options?.fees || ScrtGas.defaultFees
@@ -80,7 +80,7 @@ export class ScrtAgent extends Agent {
     }
   }
   readonly name:     string
-  readonly chain:    Scrt
+  declare chain:    Scrt
   readonly address:  string
   readonly keyPair:  any
   readonly mnemonic: any
@@ -98,9 +98,6 @@ export class ScrtAgent extends Agent {
       this.fees,
       BroadcastMode.Sync
     )
-  }
-  get nextBlock () {
-    return waitUntilNextBlock(this)
   }
   get block () {
     return this.api.getBlock()
@@ -243,7 +240,7 @@ export class ScrtAgent extends Agent {
     })
   }
   async doQuery (
-    { label, address, codeHash }: Instance, msg: Message
+    { address, codeHash }: Instance, msg: Message
   ) {
     const { api } = this
     return this.rateLimited(function doQueryInner () {
@@ -251,7 +248,7 @@ export class ScrtAgent extends Agent {
     })
   }
   async doExecute (
-    { label, address, codeHash }: Instance, msg: Message,
+    { address, codeHash }: Instance, msg: Message,
     memo: any, amount: any, fee: any
   ) {
     return this.api.execute(address, msg as any, memo, amount, fee, codeHash)
@@ -306,32 +303,7 @@ export class ScrtAgent extends Agent {
   }
 }
 
-export async function waitUntilNextBlock (
-  agent:    ScrtAgent,
-  interval: number = 1000
-) {
-  console.info(
-    bold('Waiting until next block with'), agent.address
-  )
-  // starting height
-  const {header:{height}} = await agent.block
-  //console.info(bold('Block'), height)
-  // every `interval` msec check if the height has increased
-  return new Promise<void>(async resolve=>{
-    while (true) {
-      // wait for `interval` msec
-      await new Promise(ok=>setTimeout(ok, interval))
-      // get the current height
-      const now = await agent.block
-      //console.info(bold('Block'), now.header.height)
-      // check if it went up
-      if (now.header.height > height) {
-        resolve()
-        break
-      }
-    }
-  })
-}
+export 
 
 const init1 = (sender, code_id, label, init_msg, init_funds) => ({
   "type": 'wasm/MsgInstantiateContract',

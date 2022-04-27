@@ -7,16 +7,23 @@ import { Trace } from './Trace'
 import type { Chain } from './Chain'
 import type { Bundle } from './Bundle'
 
-const console = Console('@fadroma/ops/Agent')
+const console = Console('Fadroma Agent')
 
 export type AgentConstructor = (new (Identity) => Agent) & { create: (any) => Agent }
 
 export abstract class Agent implements Identity {
 
+  constructor (
+    chain: Chain,
+  ) {
+    this.chain = chain
+  }
+
   trace = new Trace("unnamed", console)
 
+  abstract readonly address: string
+
   readonly chain:   Chain
-  readonly address: string
   readonly name:    string
   fees: Record<string, any>
 
@@ -26,7 +33,36 @@ export abstract class Agent implements Identity {
   abstract get block (): Promise<any>
 
   /** Wait until block height increments. */
-  abstract get nextBlock (): Promise<void>
+  get nextBlock () {
+    return this.waitUntilNextBlock()
+  }
+
+  /** Wait until block height increments. */
+  async waitUntilNextBlock (
+    interval: number = 1000
+  ) {
+    console.info(
+      bold('Waiting until next block with'), this.address
+    )
+    // starting height
+    const {header:{height}} = await this.block
+    //console.info(bold('Block'), height)
+    // every `interval` msec check if the height has increased
+    return new Promise<void>(async resolve=>{
+      while (true) {
+        // wait for `interval` msec
+        await new Promise(ok=>setTimeout(ok, interval))
+        // get the current height
+        const now = await this.block
+        //console.info(bold('Block'), now.header.height)
+        // check if it went up
+        if (now.header.height > height) {
+          resolve()
+          break
+        }
+      }
+    })
+  }
 
   /** Get up-to-date account info for this agent's address. */
   abstract get account (): Promise<any>
@@ -151,10 +187,6 @@ export abstract class Agent implements Identity {
     }
     //@ts-ignore
     return new this.Bundle(this)
-  }
-
-  constructor (options?: any) {
-    if (options) Object.assign(this, options)
   }
 
 }

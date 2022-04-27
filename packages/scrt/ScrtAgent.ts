@@ -54,12 +54,17 @@ export async function getScrtAgent (identity: Identity, AgentClass) {
   })
 }
 
+export interface ScrtAgentOptions extends Identity {
+  API?:   APIConstructor
+  chain?: Scrt
+}
+
 export class ScrtAgent extends Agent {
   static create = (identity: Identity) => getScrtAgent(identity, ScrtAgent)
   Bundle = ScrtBundle
   fees = ScrtGas.defaultFees
   defaultDenomination = 'uscrt'
-  constructor (options: Identity & { API?: APIConstructor, chain?: Scrt } = {}) {
+  constructor (options: ScrtAgentOptions = {}) {
     super(options)
     this.name     = this.trace.name = options?.name || ''
     this.chain    = options?.chain as Scrt // TODO chain id to chain

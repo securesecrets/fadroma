@@ -5,11 +5,9 @@ import {
   FSUploader, CachingFSUploader,
   fileURLToPath, relative,
   config,
-  Mocks,
-  runCommands
+  runCommands,
+  Mocknet
 } from '@fadroma/ops'
-
-import { Mocknet } from '@fadroma/mocknet'
 
 // Reexport the main libraries
 export * from '@fadroma/ops'
@@ -24,15 +22,16 @@ const console = Console('@hackbg/fadroma')
 // which give you the appropriate Chain and Agent
 // for talking to that chain id.
 import { Scrt_1_2 } from '@fadroma/scrt'
-export { Scrt_1_2 }
+import { ScrtNext } from '@fadroma/scrt-next'
+export { Scrt_1_2, ScrtNext }
 Object.assign(Chain.namedChains, {
-  'Scrt_1_2_Mainnet': Scrt_1_2.chains.Mainnet,
-  'Scrt_1_2_Testnet': Scrt_1_2.chains.Testnet,
-  'Scrt_1_2_Devnet':  Scrt_1_2.chains.Devnet,
-  'Mocknet': () => {
-    console.warn(bold('HELP WANTED:'), 'The Mocknet is far from implemented.')
-    return Mocks.Chains.Mocknet()
-  },
+  'Mocknet':           Mocknet,
+  'Scrt_1_2_Mainnet':  Scrt_1_2.chains.Mainnet,
+  'Scrt_1_2_Testnet':  Scrt_1_2.chains.Testnet,
+  'Scrt_1_2_Devnet':   Scrt_1_2.chains.Devnet,
+  'Scrt_Next_Mainnet': ScrtNext.chains.Mainnet,
+  'Scrt_Next_Testnet': ScrtNext.chains.Testnet,
+  'Scrt_Next_Devnet':  ScrtNext.chains.Devnet,
 })
 
 export type Command<T> = (MigrationContext)=>Promise<T>
